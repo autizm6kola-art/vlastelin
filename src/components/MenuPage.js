@@ -83,7 +83,7 @@ function MenuPage({ allTasks, onSelectRange }) {
   return (
     <div className="menu-container">
       <BackButton />
-      <h1 className="menu-title">Лис и пёс.</h1>
+      <h1 className="menu-title">Властелин колец.</h1>
 
       <DailyProgress />
 
