@@ -1,175 +1,468 @@
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo
+} from "react";
 
+import styles from "../styles/ReadingPage.module.css";
 
-
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import styles from '../styles/ReadingPage.module.css';
 import SentenceDisplay from "./SentenceDisplay";
-import { saveCorrectInput, getUserInputs, saveUserInputs } from "../utils/storage";
+
+import {
+  saveCorrectInput,
+  getUserInputs,
+  saveUserInputs
+} from "../utils/storage";
+
 import { createSpeechRecognizer } from "../utils/bookUtils";
+
 import { addTodayWords } from "../utils/dailyStats";
 
+const APP_ID = "vlastelin";
 
-const APP_ID = "vlastelin"; // 👈 уникальное имя книги
-
-
-
+// ======================================================
+// НОРМАЛИЗАЦИЯ
+// ======================================================
 
 function normalizeToArray(text) {
+
   return text
     .toLowerCase()
-    .replace(/[.,!?;:«»"()\r\n]/g, "")  // Убрали лишнее экранирование
+    .replace(/[.,!?;:«»"()\r\n]/g, "")
     .split(/\s+/)
     .filter(Boolean);
 }
 
 export default function ReadingTask({ task }) {
-  const [isListening, setIsListening] = useState(false);
-  const [highlightedIndexes, setHighlightedIndexes] = useState([]);
-  const [isStopped, setIsStopped] = useState(false); // ⬅️ ОТВЕЧАЕТ ЗА ЗЕЛЁНЫЙ ФОН
-  const recognizerRef = useRef(null);
 
-  // 🔴 Запись
-  const mediaRecorderRef = useRef(null);
-  const recordedChunks = useRef([]);
+  // ======================================================
+  // STATE
+  // ======================================================
 
-  const content = useMemo(() => task.content || [], [task.content]); // Мемоизация content, чтобы избежать лишних пересозданий
+  const [isListening, setIsListening] =
+    useState(false);
 
-  const totalWords = content.filter(item => item.type === "word").length;
+  const [highlightedIndexes, setHighlightedIndexes] =
+    useState([]);
+
+  const [isStopped, setIsStopped] =
+    useState(false);
+
+  // 👇 индекс слова для дочитывания
+
+  const [activeWordIndex, setActiveWordIndex] =
+    useState(null);
+
+  // ======================================================
+  // REFS
+  // ======================================================
+
+  const recognizerRef =
+    useRef(null);
+
+  // 👇 ВАЖНО
+  // хранит АКТУАЛЬНЫЕ highlighted слова
+
+  const highlightedIndexesRef =
+    useRef([]);
+
+  const mediaRecorderRef =
+    useRef(null);
+
+  const recordedChunks =
+    useRef([]);
+
+  // ======================================================
+  // CONTENT
+  // ======================================================
+
+  const content = useMemo(
+    () => task.content || [],
+    [task.content]
+  );
+
+  const totalWords = content.filter(
+    item => item.type === "word"
+  ).length;
+
+  // ======================================================
+  // LOAD SAVED PROGRESS
+  // ======================================================
 
   useEffect(() => {
-    const saved = getUserInputs(task.id);
+
+    const saved =
+      getUserInputs(task.id);
+
     if (saved?.[0]) {
+
       setHighlightedIndexes(saved[0]);
     }
+
   }, [task.id]);
 
-  // Оборачиваем handleResult в useCallback
+  // ======================================================
+  // 👇 СИНХРОНИЗАЦИЯ REF
+  // ======================================================
+
+  useEffect(() => {
+
+    highlightedIndexesRef.current =
+      highlightedIndexes;
+
+  }, [highlightedIndexes]);
+
+  // ======================================================
+  // ОБРАБОТКА РЕЗУЛЬТАТОВ SPEECH
+  // ======================================================
+
   const handleResult = useCallback((transcript) => {
-    const spokenTokens = normalizeToArray(transcript);
-    const availableTokens = [...spokenTokens];
+
+    const transcriptWords =
+      normalizeToArray(transcript);
+
+    // ==================================================
+    // 🎤 РЕЖИМ ОДНОГО СЛОВА
+    // ==================================================
+
+    if (activeWordIndex !== null) {
+
+      const targetWord =
+        content[activeWordIndex]?.word
+          ?.toLowerCase()
+          .replace(/[.,!?;:«»"()\r\n]/g, "");
+
+      if (
+        transcriptWords.includes(targetWord)
+      ) {
+
+        const merged = [
+
+          ...new Set([
+
+            ...highlightedIndexesRef.current,
+
+            activeWordIndex
+
+          ])
+        ];
+
+        setHighlightedIndexes(merged);
+
+        saveUserInputs(task.id, [merged]);
+
+        addTodayWords(APP_ID, 1);
+
+        // 👇 останавливаем recognizer
+
+        try {
+
+          recognizerRef.current?.stop();
+
+        } catch (e) {}
+
+        setIsListening(false);
+
+        setActiveWordIndex(null);
+      }
+
+      return;
+    }
+
+    // ==================================================
+    // 🎤 ОБЫЧНОЕ ЧТЕНИЕ ФРАЗЫ
+    // ==================================================
+
+    const availableTokens =
+      [...transcriptWords];
 
     const newMatchedIndexes = [];
 
     content.forEach((item, index) => {
+
       if (item.type !== "word") return;
-      const clean = item.word.toLowerCase().replace(/[.,!?;:«»"()\r\n]/g, "");
-      const foundIndex = availableTokens.findIndex(tok => tok === clean);
+
+      const clean =
+        item.word
+          .toLowerCase()
+          .replace(/[.,!?;:«»"()\r\n]/g, "");
+
+      const foundIndex =
+        availableTokens.findIndex(
+          tok => tok === clean
+        );
+
       if (foundIndex !== -1) {
+
         newMatchedIndexes.push(index);
+
         availableTokens.splice(foundIndex, 1);
       }
     });
 
-    // Получаем старые сохранённые индексы
-const saved = getUserInputs(task.id);
-const oldIndexes = saved?.[0] || [];
+    // ==================================================
+    // merge старых и новых слов
+    // ==================================================
 
-// Определяем НОВЫЕ слова
-const trulyNew = newMatchedIndexes.filter(
-  (index) => !oldIndexes.includes(index)
-);
+    const merged = [
 
-// 👉 увеличиваем счётчик сегодняшнего дня
-addTodayWords(APP_ID, trulyNew.length);
+      ...new Set([
 
+        ...highlightedIndexesRef.current,
 
-// Сохраняем обновлённые индексы
-setHighlightedIndexes(newMatchedIndexes);
-saveUserInputs(task.id, [newMatchedIndexes]);
+        ...newMatchedIndexes
 
+      ])
+    ];
 
-    if (newMatchedIndexes.length >= totalWords / 2) {
+    // ==================================================
+    // считаем только новые слова
+    // ==================================================
+
+    const trulyNew = merged.filter(
+      index =>
+        !highlightedIndexesRef.current
+          .includes(index)
+    );
+
+    addTodayWords(
+      APP_ID,
+      trulyNew.length
+    );
+
+    setHighlightedIndexes(merged);
+
+    saveUserInputs(task.id, [merged]);
+
+    // ==================================================
+    // прогресс
+    // ==================================================
+
+    if (merged.length >= totalWords / 2) {
+
       saveCorrectInput(task.id, 0);
     }
 
-    // 👉 Событие обновления прогресса
-    window.dispatchEvent(new Event('progressUpdated'));
-  }, [content, task.id, totalWords]);  // Зависимости: content, task.id, totalWords
+    window.dispatchEvent(
+      new Event("progressUpdated")
+    );
 
-  // Добавляем handleResult в зависимости useEffect
+  }, [
+
+    activeWordIndex,
+
+    content,
+
+    task.id,
+
+    totalWords
+
+  ]);
+
+  // ======================================================
+  // 🎤 СОЗДАЁМ recognizer ОДИН РАЗ
+  // ======================================================
+
   useEffect(() => {
-    if (isListening && !recognizerRef.current) {
-      recognizerRef.current = createSpeechRecognizer({
-        onResult: handleResult,
-        onEnd: () => setIsListening(false),
-      });
-      recognizerRef.current.start();
+
+    if (!recognizerRef.current) {
+
+      recognizerRef.current =
+        createSpeechRecognizer({
+
+          onResult: (transcript) => {
+
+            handleResult(transcript);
+          },
+
+          onEnd: () => {
+
+            // 👇 если listening ещё активно —
+            // автоматически перезапускаем session
+
+            if (isListening) {
+
+              try {
+
+                recognizerRef.current?.start();
+
+              } catch (e) {
+
+                console.log(
+                  "restart blocked"
+                );
+              }
+            }
+          }
+        });
     }
 
-    if (!isListening && recognizerRef.current) {
-      recognizerRef.current.stop();
-      recognizerRef.current = null;
-    }
+    // cleanup только при уходе
+    // со страницы
 
     return () => {
-      if (recognizerRef.current) {
-        recognizerRef.current.stop();
-        recognizerRef.current = null;
-      }
-    };
-  }, [isListening, handleResult]);  // Добавили handleResult
 
-  // 🔴 Начать запись
+      try {
+
+        recognizerRef.current?.stop();
+
+      } catch (e) {}
+    };
+
+  }, []);
+
+  // ======================================================
+  // 🔴 RECORDING
+  // ======================================================
+
   const startRecording = async () => {
+
     recordedChunks.current = [];
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          recordedChunks.current.push(event.data);
-        }
-      };
+      const stream =
+        await navigator.mediaDevices
+          .getUserMedia({
+            audio: true
+          });
 
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(recordedChunks.current, { type: "audio/webm" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.style.display = "none";
-        a.href = url;
+      const mediaRecorder =
+        new MediaRecorder(stream);
 
-        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-        a.download = `reading-${task.id}-${timestamp}.webm`;
-        document.body.appendChild(a);
-        a.click();
-        URL.revokeObjectURL(url);
-      };
+      mediaRecorderRef.current =
+        mediaRecorder;
+
+      mediaRecorder.ondataavailable =
+        (event) => {
+
+          if (event.data.size > 0) {
+
+            recordedChunks.current
+              .push(event.data);
+          }
+        };
 
       mediaRecorder.start();
+
     } catch (err) {
-      console.error("Ошибка доступа к микрофону", err);
-      alert("Не удалось начать запись. Разрешите доступ к микрофону.");
+
+      console.error(err);
+
+      alert(
+        "Нет доступа к микрофону"
+      );
     }
   };
 
-  // 🔴 Остановить запись
   const stopRecording = () => {
+
     if (mediaRecorderRef.current) {
+
       mediaRecorderRef.current.stop();
     }
   };
 
+  // ======================================================
+  // ▶️ START
+  // ======================================================
+
   const handleStart = () => {
-    setIsStopped(false); // ⬅️ при старте чтения фон НЕ зелёный
+
+    setIsStopped(false);
+
+    setActiveWordIndex(null);
+
     setIsListening(true);
+
     startRecording();
+
+    try {
+
+      recognizerRef.current?.start();
+
+    } catch (e) {
+
+      console.log(
+        "already started"
+      );
+    }
   };
+
+  // ======================================================
+  // ⏹ STOP
+  // ======================================================
 
   const handleStop = () => {
+
     setIsListening(false);
-    setIsStopped(true); // ⬅️ фон станет зелёным только здесь
+
+    setIsStopped(true);
+
+    setActiveWordIndex(null);
+
     stopRecording();
+
+    try {
+
+      recognizerRef.current?.stop();
+
+    } catch (e) {}
   };
 
+  // ======================================================
+  // 🎤 ДОЧИТАТЬ ОДНО СЛОВО
+  // ======================================================
+
+  const handleWordListen = (index) => {
+
+    setActiveWordIndex(index);
+
+    setIsStopped(false);
+
+    setIsListening(true);
+
+    try {
+
+      recognizerRef.current?.start();
+
+    } catch (e) {
+
+      console.log(
+        "already started"
+      );
+    }
+  };
+
+  // ======================================================
+  // RENDER
+  // ======================================================
+
   return (
+
     <div
-      className={`${styles.container} ${isStopped ? styles.completed : ""}`}
+      className={`
+        ${styles.container}
+        ${isStopped ? styles.completed : ""}
+      `}
     >
+
       <div className={styles.row}>
-        <SentenceDisplay content={content} highlightedIndexes={highlightedIndexes} />
+
+        <SentenceDisplay
+          content={content}
+          highlightedIndexes={
+            highlightedIndexes
+          }
+          onWordListen={
+            handleWordListen
+          }
+          activeWordIndex={
+            activeWordIndex
+          }
+        />
 
         <button
           className={styles.button}
@@ -180,14 +473,6 @@ saveUserInputs(task.id, [newMatchedIndexes]);
           ▶️
         </button>
 
-        {/* <button
-          className={styles.button}
-          onClick={handleStop}
-          disabled={!isListening}
-          title="Стоп"
-        >
-          ⏹️
-        </button> */}
       </div>
     </div>
   );
