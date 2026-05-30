@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/vlastelin/static/css/main.ec0b5738.css",
-    "main.js": "/vlastelin/static/js/main.be92964b.js",
+    "main.js": "/vlastelin/static/js/main.9574f493.js",
     "static/js/453.d37bcb50.chunk.js": "/vlastelin/static/js/453.d37bcb50.chunk.js",
     "index.html": "/vlastelin/index.html",
     "main.ec0b5738.css.map": "/vlastelin/static/css/main.ec0b5738.css.map",
-    "main.be92964b.js.map": "/vlastelin/static/js/main.be92964b.js.map",
+    "main.9574f493.js.map": "/vlastelin/static/js/main.9574f493.js.map",
     "453.d37bcb50.chunk.js.map": "/vlastelin/static/js/453.d37bcb50.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.ec0b5738.css",
-    "static/js/main.be92964b.js"
+    "static/js/main.9574f493.js"
   ]
 }
