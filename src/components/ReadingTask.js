@@ -464,14 +464,14 @@ export default function ReadingTask({ task }) {
           }
         />
 
-        <button
+        {/* <button
           className={styles.button}
           onClick={handleStart}
           disabled={isListening}
           title="Начать читать"
         >
           ▶️
-        </button>
+        </button> */}
 
       </div>
     </div>
