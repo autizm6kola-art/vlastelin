@@ -106,7 +106,7 @@ function TasksPage({
       <div className="percent-bar-wrapper">
         <p>
           <strong className="task-strong">
-            ЦЕЛЬ:  50%  📅 Прочитано: {correctWordCount} из {totalWordCount} ({percentRead}%) 
+            ЦЕЛЬ:  52%  📅 Прочитано: {correctWordCount} из {totalWordCount} ({percentRead}%) 
           </strong>
           <DailyProgress />
         </p>
