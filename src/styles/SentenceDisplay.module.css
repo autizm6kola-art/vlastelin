@@ -11,26 +11,25 @@
 }
 
 .word {
-  font-size: 24px;
-  transition: 0.01s;
+  font-size: 25px;
+  
 }
 
 .highlighted {
-  color: #1b5e20;
+  color: #f5f7fa;
 
-  background: #c8f7c5;
+  background: #f5f7fa;
 
   border-radius: 8px;
 
-  padding: 2px 3px;
+  padding: 2px 2px;
 
-  transition: 0.01s;
 }
 
 .active {
   background: gold;
   border-radius: 6px;
-  padding: 2px 6px;
+  padding: 2px 2px;
 }
 
 .miniMic {
@@ -59,7 +58,6 @@
 
   font-size: 14px;
 
-  transition: 0.01s;
 }
 
 .listenButton:hover {
