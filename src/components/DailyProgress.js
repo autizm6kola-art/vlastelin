@@ -25,7 +25,7 @@ function DailyProgress() {
 
   return (
     <p style={{ marginTop: "10px", fontWeight: "bold" }}>
-       ЦЕЛЬ: 700 слов. 📅 Прочитано:  {todayCount} слов
+       ЦЕЛЬ: 800 слов. 📅 Прочитано:  {todayCount} слов
     </p>
   );
 }
