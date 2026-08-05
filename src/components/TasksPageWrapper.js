@@ -9,7 +9,7 @@ function TasksPageWrapper({
   setSelectedRange,
   goBack
 }) {
-  const rangeSize = 3
+  const rangeSize = 314
   ;
 
   // 1️⃣ Создаём все диапазоны, как в меню
