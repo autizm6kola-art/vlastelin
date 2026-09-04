@@ -1,132 +1,238 @@
-
-
-// export default MenuPage;
-
-
 import React, { useEffect, useState } from 'react';
+
 import { clearAllAnswers, getUserInputs } from '../utils/storage';
+
 import BackButton from './BackButton';
 import ProgressBar from './ProgressBar';
-import '../styles/menuPage.css';
 import BackupControls from './BackupControls';
 import DailyProgress from "./DailyProgress";
 
+import '../styles/menuPage.css';
+
 
 function MenuPage({ allTasks, onSelectRange }) {
+
   const [correctWordsCount, setCorrectWordsCount] = useState(0);
   const [totalWords, setTotalWords] = useState(0);
-  const [rangesProgress, setRangesProgress] = useState({}); // ключ: "startId-endId", значение: {correct, total}
+
+  // Прогресс каждого отдельного пункта
+  const [tasksProgress, setTasksProgress] = useState({});
+
 
   useEffect(() => {
+
     let total = 0;
     let correct = 0;
 
-    allTasks.forEach(task => {
-      const words = task.content.filter(item => item.type === 'word');
-      total += words.length;
+    const newTasksProgress = {};
 
+
+    allTasks.forEach(task => {
+
+      // Все слова этого пункта
+      const words = task.content.filter(
+        item => item.type === 'word'
+      );
+
+      const taskTotal = words.length;
+
+      total += taskTotal;
+
+
+      // Сохранённые прочитанные слова
       const savedInputs = getUserInputs(task.id);
-      if (savedInputs && Array.isArray(savedInputs[0])) {
-        correct += savedInputs[0].length;
+
+      let taskCorrect = 0;
+
+      if (
+        savedInputs &&
+        Array.isArray(savedInputs[0])
+      ) {
+        taskCorrect = savedInputs[0].length;
+        correct += taskCorrect;
       }
+
+
+      // Сохраняем прогресс конкретного пункта
+      newTasksProgress[task.id] = {
+        correct: taskCorrect,
+        total: taskTotal
+      };
+
     });
+
 
     setTotalWords(total);
     setCorrectWordsCount(correct);
 
-    // ДИАПОЗОН — количество заданий в одной кнопке
-    const rangeSize = 3
-    ;
-    const newRangesProgress = {};
+    setTasksProgress(newTasksProgress);
 
-
-    for (let i = 0; i < allTasks.length; i += rangeSize) {
-      const rangeTasks = allTasks.slice(i, i + rangeSize);
-      const startId = rangeTasks[0].id;
-      const endId = rangeTasks[rangeTasks.length - 1].id;
-
-      let rangeTotal = 0;
-      let rangeCorrect = 0;
-
-      rangeTasks.forEach(task => {
-        const words = task.content.filter(item => item.type === 'word');
-        rangeTotal += words.length;
-
-        const savedInputs = getUserInputs(task.id);
-        if (savedInputs && Array.isArray(savedInputs[0])) {
-          rangeCorrect += savedInputs[0].length;
-        }
-      });
-
-      newRangesProgress[`${startId}-${endId}`] = {
-        correct: rangeCorrect,
-        total: rangeTotal
-      };
-    }
-
-    setRangesProgress(newRangesProgress);
   }, [allTasks]);
 
-  // Функция, чтобы определить цвет кнопки по прогрессу
+
+  // =====================================================
+  // Цвет кнопки по прогрессу
+  // =====================================================
+
   const getButtonColor = (correct, total) => {
-    if (correct === 0) return 'lightgray'; // ничего не сделано
-    if (correct === total) return '#1ae63cc3'; // полностью сделано
-    return '#fef60091'; // частично сделано
+
+    if (correct === 0) {
+      return 'lightgray';
+    }
+
+    if (correct === total) {
+      return '#1ae63cc3';
+    }
+
+    return '#fef60091';
   };
 
-  // Вычисление процента прочитанных слов для общей статистики
-  const percentRead = totalWords > 0 ? Math.round((correctWordsCount / totalWords) * 100) : 0;
 
-  // Функция для вычисления процента для диапазона
-  const getRangeProgressPercent = (correct, total) => {
-    return total > 0 ? Math.round((correct / total) * 100) : 0;
+  // =====================================================
+  // Общий процент
+  // =====================================================
+
+  const percentRead =
+    totalWords > 0
+      ? Math.round(
+          (correctWordsCount / totalWords) * 100
+        )
+      : 0;
+
+
+  // =====================================================
+  // Процент конкретного пункта
+  // =====================================================
+
+  const getTaskProgressPercent = (correct, total) => {
+
+    return total > 0
+      ? Math.round(
+          (correct / total) * 100
+        )
+      : 0;
+
   };
+
 
   return (
+
     <div className="menu-container">
+
       <BackButton />
-      <h1 className="menu-title">Властелин колец.</h1>
+
+
+      <h1 className="menu-title">
+        ЧТЕНИЕ
+      </h1>
+
 
       <DailyProgress />
 
-      <ProgressBar correct={correctWordsCount} total={totalWords} />
+
+      <ProgressBar
+        correct={correctWordsCount}
+        total={totalWords}
+      />
+
 
       <p className="menu-progress-text">
         Прочитано слов: {correctWordsCount} из {totalWords} ({percentRead}%)
       </p>
 
+
+      {/* =================================================
+          КНОПКИ ПУНКТОВ
+          ================================================= */}
+
       <div className="range-buttons-wrapper">
-        {Object.entries(rangesProgress).map(([rangeKey, { correct, total }], index) => {
-          const btnColor = getButtonColor(correct, total);
-          const progressPercent = getRangeProgressPercent(correct, total);
+
+        {allTasks.map((task, index) => {
+
+          const progress =
+            tasksProgress[task.id] || {
+              correct: 0,
+              total: 0
+            };
+
+
+          const btnColor = getButtonColor(
+            progress.correct,
+            progress.total
+          );
+
+
+          const progressPercent =
+            getTaskProgressPercent(
+              progress.correct,
+              progress.total
+            );
+
 
           return (
+
             <button
-              key={rangeKey}
+              key={task.id}
               className="range-button"
-              style={{ backgroundColor: btnColor }}
-              onClick={() => onSelectRange(rangeKey)}
+              style={{
+                backgroundColor: btnColor
+              }}
+              onClick={() =>
+                onSelectRange(task.id.toString())
+              }
             >
-              {index + 1} ({progressPercent}%)
+
+              <span>
+                {task.title}
+              </span>
+
+              <span>
+                ({progressPercent}%)
+              </span>
+
             </button>
+
           );
+
         })}
+
       </div>
 
+
+      {/* =================================================
+          СБРОС
+          ================================================= */}
+
       <div className="reset-button-contaner">
+
+        <BackupControls />
+
+      </div>
+      <div className="reset-button-contaner">
+
         <button
           className="reset-button"
           onClick={() => {
+
             clearAllAnswers();
+
             window.location.reload();
+
           }}
         >
+
           Сбросить все ответы
+
         </button>
+
       </div>
-      <div className="reset-button-contaner"><BackupControls /></div>
+
+
+
     </div>
+
   );
+
 }
 
 export default MenuPage;

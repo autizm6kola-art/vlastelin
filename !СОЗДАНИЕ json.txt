@@ -1,1 +1,1 @@
-Чтобы создать json - node convert.js, 
+Чтобы создать json - node T.js, 

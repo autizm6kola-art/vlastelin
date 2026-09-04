@@ -13,7 +13,7 @@ function BackupControls() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'vlastelin_backup.json';
+    a.download = 'uchebnik1_backup.json';
     a.click();
     URL.revokeObjectURL(url);
   };

@@ -1,36 +1,71 @@
 .wrapper {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  flex-direction: column;
+  gap: 40px;
+  width: 100%;
 }
 
-.wordBlock {
+
+/* ======================================================
+   АБЗАЦ
+   ====================================================== */
+
+.paragraph {
   display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  width: 100%;
+}
+
+
+/* ======================================================
+   БЛОК ОДНОГО СЛОВА
+   ====================================================== */
+
+.wordBlock {
+  display: inline-flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-end;
 }
+
+
+/* ======================================================
+   СЛОВО
+   ====================================================== */
 
 .word {
   font-size: 25px;
-  
 }
+
+
+/* ======================================================
+   ПРОЧИТАННОЕ СЛОВО
+   ====================================================== */
 
 .highlighted {
-  color: #f5f7fa;
-
-  background: #f5f7fa;
-
+  color: #343333;
+  background: #86ff98;
   border-radius: 8px;
-
   padding: 2px 2px;
-
 }
+
+
+/* ======================================================
+   СЛОВО, КОТОРОЕ СЕЙЧАС ЧИТАЕМ
+   ====================================================== */
 
 .active {
   background: gold;
   border-radius: 6px;
   padding: 2px 2px;
 }
+
+
+/* ======================================================
+   🎤 МАЛЕНЬКИЙ МИКРОФОН
+   ====================================================== */
 
 .miniMic {
   margin-top: 4px;
@@ -42,25 +77,22 @@
   cursor: pointer;
 }
 
+
+/* ======================================================
+   👂 КНОПКА ПРОСЛУШАТЬ
+   ====================================================== */
+
 .listenButton {
-
   width: 28px;
-
   height: 28px;
-
   border: none;
-
   border-radius: 50%;
-
   cursor: pointer;
-
   background: #dbeafe;
-
   font-size: 14px;
-
 }
 
-.listenButton:hover {
 
-  transform: scale(1);
+.listenButton:hover {
+  transform: scale(1.05);
 }

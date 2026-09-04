@@ -1,7 +1,7 @@
-
-
 import React, { useMemo } from 'react';
+
 import TasksPage from './TasksPage';
+
 
 function TasksPageWrapper({
   allTasks,
@@ -9,59 +9,113 @@ function TasksPageWrapper({
   setSelectedRange,
   goBack
 }) {
-  const rangeSize = 3
-  ;
 
-  // 1️⃣ Создаём все диапазоны, как в меню
-  const ranges = useMemo(() => {
-    const result = [];
-    for (let i = 0; i < allTasks.length; i += rangeSize) {
-      const slice = allTasks.slice(i, i + rangeSize);
-      const startId = slice[0].id;
-      const endId = slice[slice.length - 1].id;
+  // =====================================================
+  // Теперь каждый task = отдельный пункт
+  //
+  // Никаких диапазонов 1-3, 4-6 и т.д.
+  // =====================================================
 
-      result.push({
-        key: `${startId}-${endId}`,
-        tasks: slice
-      });
-    }
-    return result;
-  }, [allTasks]);
+  const currentTask = useMemo(() => {
 
-  // 2️⃣ Находим текущий индекс
-  const currentIndex = ranges.findIndex(
-    r => r.key === selectedRange
-  );
+    return allTasks.find(
+      task =>
+        task.id.toString() === selectedRange.toString()
+    );
 
-  if (currentIndex === -1) {
-    return <div>Диапазон не найден</div>;
+  }, [allTasks, selectedRange]);
+
+
+  // =====================================================
+  // Если пункт не найден
+  // =====================================================
+
+  if (!currentTask) {
+
+    return (
+      <div>
+        Пункт не найден
+      </div>
+    );
+
   }
 
-  const currentTasks = ranges[currentIndex].tasks;
 
-  // 3️⃣ Навигация
+  // =====================================================
+  // Индекс текущего пункта
+  // =====================================================
+
+  const currentIndex = allTasks.findIndex(
+    task => task.id === currentTask.id
+  );
+
+
+  // =====================================================
+  // Предыдущий пункт
+  // =====================================================
+
   const goToPrev = () => {
+
     if (currentIndex > 0) {
-      setSelectedRange(ranges[currentIndex - 1].key);
+
+      const previousTask =
+        allTasks[currentIndex - 1];
+
+      setSelectedRange(
+        previousTask.id.toString()
+      );
+
     }
+
   };
+
+
+  // =====================================================
+  // Следующий пункт
+  // =====================================================
 
   const goToNext = () => {
-    if (currentIndex < ranges.length - 1) {
-      setSelectedRange(ranges[currentIndex + 1].key);
+
+    if (
+      currentIndex <
+      allTasks.length - 1
+    ) {
+
+      const nextTask =
+        allTasks[currentIndex + 1];
+
+      setSelectedRange(
+        nextTask.id.toString()
+      );
+
     }
+
   };
 
+
   return (
+
     <TasksPage
-      tasks={currentTasks}
+
+      // 👇 ВАЖНО
+      // Передаём только один пункт
+      tasks={[currentTask]}
+
       goBack={goBack}
+
       rangeIndex={currentIndex}
-      totalRanges={ranges.length}
+
+      totalRanges={allTasks.length}
+
       goToPrev={goToPrev}
+
       goToNext={goToNext}
+
     />
+
   );
+
 }
+
 
 export default TasksPageWrapper;

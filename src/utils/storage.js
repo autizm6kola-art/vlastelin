@@ -1,6 +1,6 @@
 
 
-const STORAGE_PREFIX = "vlastelin_";
+const STORAGE_PREFIX = "uchebnik1_";
 const USE_SUPABASE = false;
 
 const localStorageImpl = {

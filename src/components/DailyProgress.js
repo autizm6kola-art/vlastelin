@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { getTodayCount } from "../utils/dailyStats";
 
 
-const APP_ID = "vlastelin"; // 👈 то же самое имя
+const APP_ID = "uchebnik1"; // 👈 то же самое имя
 
 function DailyProgress() {
   const [todayCount, setTodayCount] = useState(0);
@@ -25,7 +25,7 @@ function DailyProgress() {
 
   return (
     <p style={{ marginTop: "10px", fontWeight: "bold" }}>
-       ЦЕЛЬ: 1000 слов. 📅 Прочитано:  {todayCount} слов
+       📅 Сегодня прочитано:  {todayCount} слов
     </p>
   );
 }

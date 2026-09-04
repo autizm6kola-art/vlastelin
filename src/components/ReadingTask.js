@@ -20,7 +20,7 @@ import { createSpeechRecognizer } from "../utils/bookUtils";
 
 import { addTodayWords } from "../utils/dailyStats";
 
-const APP_ID = "vlastelin";
+const APP_ID = "uchebnik1";
 
 // ======================================================
 // НОРМАЛИЗАЦИЯ
@@ -453,6 +453,7 @@ export default function ReadingTask({ task }) {
 
         <SentenceDisplay
           content={content}
+          paragraphs={task.paragraphs}
           highlightedIndexes={
             highlightedIndexes
           }
